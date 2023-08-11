@@ -1,23 +1,31 @@
-const http = require("http");
 const express = require("express");
 const app = express();
+const path = require("path");
 
 app.use(express.static("public"));
 // require("dotenv").config();
 
 const serverPort = process.env.PORT || 3000;
-const server = http.createServer(app);
+const httpServerPort = 80;
+const server = app.listen(serverPort, () => {
+  console.log(`Server started on port ${serverPort} in stage ${process.env.NODE_ENV}`);
+});
+
 const WebSocket = require("ws");
-
-let keepAliveId;
-
 const wss =
   process.env.NODE_ENV === "production"
     ? new WebSocket.Server({ server })
     : new WebSocket.Server({ port: 5001 });
 
-server.listen(serverPort);
-console.log(`Server started on port ${serverPort} in stage ${process.env.NODE_ENV}`);
+// Create HTTP server to serve webpages
+const wwwFolderPath = path.join(__dirname, "www");
+const httpServer = express();
+httpServer.use(express.static(wwwFolderPath));
+httpServer.listen(httpServerPort, () => {
+  console.log(`HTTP server started on port ${httpServerPort}`);
+});
+
+let keepAliveId;
 
 wss.on("connection", function (ws, req) {
   console.log("Connection Opened");
@@ -47,7 +55,7 @@ wss.on("connection", function (ws, req) {
   });
 });
 
-// Implement broadcast function because of ws doesn't have it
+// Implement broadcast function because ws doesn't have it
 const broadcast = (ws, message, includeSelf) => {
   if (includeSelf) {
     wss.clients.forEach((client) => {
@@ -67,7 +75,7 @@ const broadcast = (ws, message, includeSelf) => {
 /**
  * Sends a ping message to all connected clients every 50 seconds
  */
- const keepServerAlive = () => {
+const keepServerAlive = () => {
   keepAliveId = setInterval(() => {
     wss.clients.forEach((client) => {
       if (client.readyState === WebSocket.OPEN) {
@@ -76,8 +84,3 @@ const broadcast = (ws, message, includeSelf) => {
     });
   }, 50000);
 };
-
-
-app.get('/', (req, res) => {
-    res.send('Hello World!');
-});
