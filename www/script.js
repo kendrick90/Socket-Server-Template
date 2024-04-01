@@ -1,18 +1,16 @@
-// let ws = new WebSocket("wss://socket-server-gui-tweakpane.herokuapp.com:443");
-// let ws = new WebSocket("ws://localhost:5001");
-let ws = new WebSocket("ws://studio-15.local:5001");
-
+// let ws = new WebSocket("ws://localhost:3000");
+let ws = new WebSocket("ws://katalyst.local:3000");
 
 const pane = new Tweakpane.Pane();
 
 let project = {}; //Contains TD's Data format to be sent back
-let projectSchema = {};
+let projectSchema = {}; //Contains TD's Data schema
 let projectTypes = {}; // Contains TD's Data types
 let projectParams = {}; // Holds state for Tweakpane UI
 let projectParamsLookup = {}; // Contains the association between a TD param and the UI params
 
 let updatingUI = false; //keeps track of user input to throttle messages
-let timeOutID = null; //time out for throtteling messages
+let timeOutID = null; //time out for throttling messages
 
 // Handles updating the state used for TD componenets
 function updateState(name, componentType, params, value, stateChanges) {
@@ -89,14 +87,12 @@ function updateState(name, componentType, params, value, stateChanges) {
 
 // retrieves data and ui settings for a provided element
 function parseData(componentType, size, info, par, name, useMinMax) {
-  let data = {};
-  let dataParams = {};
-  let value = info[name];
-  // try {
-  //   dataParams['disabled'] = true//info[name].readOnly && !info[name].enabled;
-  // } catch (e) {
-
-  // }
+  let data = {}; //data to be sent to tweakpane
+  let dataParams = {}; //ui settings for tweakpane
+  let value = info[name]; //value from TD
+  try {
+    dataParams["disabled"] = true; //info[name].readOnly && !info[name].enabled;
+  } catch (e) {}
   if (
     componentType === "XY" ||
     componentType === "XYZ" ||
@@ -117,7 +113,7 @@ function parseData(componentType, size, info, par, name, useMinMax) {
     for (let i = 0; i < componentType.length; i++) {
       let currName = rename[i];
       data[currName] = info[name + tdDataName[i]][0];
-      if(useMinMax) {
+      if (useMinMax) {
         if (currName === "y") {
           dataParams[currName] = {
             inverted: true,
@@ -149,7 +145,7 @@ function parseData(componentType, size, info, par, name, useMinMax) {
     return { data, dataParams };
   } else if (componentType === "Float" || componentType === "Int") {
     if (size == 1) {
-      if(useMinMax) {
+      if (useMinMax) {
         dataParams["min"] = par.normMin[0];
         dataParams["max"] = par.normMax[0];
       }
@@ -160,7 +156,7 @@ function parseData(componentType, size, info, par, name, useMinMax) {
         let currInfo = info[name + i][0];
         let currName = rename[i - 1];
         data[currName] = currInfo;
-        if(useMinMax) {
+        if (useMinMax) {
           if (currName === "y") {
             dataParams[currName] = {
               inverted: true,
@@ -202,7 +198,7 @@ function updateGui(schema, newInfo, componentName, params, useMinMax) {
       params[name] = data;
     }
   }
-  
+
   //Updates all the elements
   // for (const [page, parameter] of Object.entries(schema)) {
   //   for (const [name, par] of Object.entries(parameter)) {
@@ -254,9 +250,20 @@ function initGUI(schema, info, componentName, params, expanded, useMinMax) {
         continue;
       }
       projectParamsLookup[componentName][name] = {
-        componentType, size: par.size, info, par, name,
+        componentType,
+        size: par.size,
+        info,
+        par,
+        name,
       };
-      let { dataParams, data } = parseData(componentType, par.size, info, par, name, useMinMax);
+      let { dataParams, data } = parseData(
+        componentType,
+        par.size,
+        info,
+        par,
+        name,
+        useMinMax
+      );
       params[name] = data;
       componentTypes[name] = componentType;
       if (componentType === "Float" || componentType === "Int") {
@@ -317,13 +324,13 @@ function initGUI(schema, info, componentName, params, expanded, useMinMax) {
   }
 }
 
-function sendUpdatedTDState(ws, info, componentName, pulse=[]) {
+function sendUpdatedTDState(ws, info, componentName, pulse = []) {
   ws.send(
     JSON.stringify({
       GUIUpdate: true,
       info,
       componentName,
-      pulse
+      pulse,
     })
   );
 }
@@ -366,7 +373,7 @@ ws.addEventListener("message", (message) => {
             data["info"],
             componentName,
             projectParams[componentName],
-            openFolder, 
+            openFolder,
             useMinMax
           );
         }

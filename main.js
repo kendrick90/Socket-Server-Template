@@ -5,21 +5,22 @@ const WebSocket = require("ws");
 
 app.use(express.static("public")); // Serve static files from the "public" directory
 
-const serverPort = process.env.PORT || 3000; // Set server port from environment variable or default to 3000
+const wsServerPort = process.env.PORT || 3000; // Set server port from environment variable or default to 3000
 const httpServerPort = 80; // Port for HTTP server
 
-const server = app.listen(serverPort, () => {
-  console.log(`Server started on port ${serverPort}`);
+const server = app.listen(wsServerPort, () => {
+  console.log(`Websocket server started on port ${wsServerPort}`);
 });
 
 const wss = new WebSocket.Server({ server }); // Create WebSocket server with existing HTTP server
 
 // Create HTTP server to serve webpages
-const wwwFolderPath = path.join(__dirname, "www");
-const httpServer = express();
+const wwwFolderPath = path.join(__dirname, "www"); // Path to the "www" directory
+const httpServer = express(); // Create new express app for HTTP server
 httpServer.use(express.static(wwwFolderPath)); // Serve static files from the "www" directory
+// Start HTTP server
 httpServer.listen(httpServerPort, () => {
-  console.log(`HTTP server started on port ${httpServerPort}`);
+  console.log(`HTTP server started on port ${httpServerPort}`); // Log message to console
 });
 
 let keepAliveId; // Initialize variable to store the interval ID for keep-alive
